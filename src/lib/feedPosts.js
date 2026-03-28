@@ -21,6 +21,7 @@ export function mapRowToPost(row) {
   );
   return {
     id: row.id,
+    authorUserId: row.user_id != null ? String(row.user_id) : null,
     tag: row.tag,
     time: formatRelativeTime(row.created_at),
     relates: row.relates_count ?? 0,

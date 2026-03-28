@@ -5,6 +5,7 @@ import { checkSupabaseAuthReachable, supabaseProjectUrl } from '../lib/supabaseC
 
 export default function LoginPage() {
   const {
+    isConfigured,
     sessionReady,
     loading,
     error,
@@ -40,12 +41,17 @@ export default function LoginPage() {
 
   const checking = !sessionReady;
   const busy = loading;
+  const authDisabled = checking || busy || !isConfigured;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
     setFormError('');
     setSignupSent(false);
+    if (!isConfigured) {
+      setFormError('Add Supabase keys to .env (see message above), then restart the dev server.');
+      return;
+    }
     if (!loginId.trim() || !password) {
       setFormError('Enter your User ID and password.');
       return;
@@ -66,7 +72,7 @@ export default function LoginPage() {
     }
   };
 
-  const signInDisabled = checking || busy || !loginId.trim() || !password;
+  const signInDisabled = checking || busy || !isConfigured || !loginId.trim() || !password;
   const signUpDisabled =
     signInDisabled ||
     password.length < 6 ||
@@ -122,6 +128,28 @@ export default function LoginPage() {
           Choose a User ID (letters, numbers, underscores) and a password so you can log back in on this or another device.
           Your posts in the feed stay anonymous to others; only your account ID is stored with them.
         </p>
+
+        {!isConfigured && (
+          <div style={{
+            padding: '12px 14px',
+            marginBottom: 20,
+            borderRadius: 'var(--radius-md)',
+            background: '#F5F0E8',
+            border: '1px solid #D8C8A8',
+            fontSize: 13,
+            color: 'var(--ink-mid)',
+            lineHeight: 1.55,
+          }}>
+            <strong style={{ color: 'var(--ink)' }}>Supabase is not configured.</strong>{' '}
+            In the project folder (same level as <code style={{ fontSize: 11 }}>package.json</code>), create a file named{' '}
+            <code style={{ fontSize: 11 }}>.env</code> — on Windows make sure it is not{' '}
+            <code style={{ fontSize: 11 }}>.env.txt</code>. Copy{' '}
+            <code style={{ fontSize: 11 }}>.env.example</code>, set{' '}
+            <code style={{ fontSize: 11 }}>VITE_SUPABASE_URL</code> and{' '}
+            <code style={{ fontSize: 11 }}>VITE_SUPABASE_ANON_KEY</code>, then stop and run{' '}
+            <code style={{ fontSize: 11 }}>npm run dev</code> again (Vite only reads env at startup).
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
           {['signin', 'signup'].map((m) => (
@@ -227,7 +255,7 @@ export default function LoginPage() {
             autoComplete="username"
             value={loginId}
             onChange={(e) => setLoginId(e.target.value)}
-            disabled={checking || busy}
+            disabled={authDisabled}
             placeholder="e.g. river_owl_12"
             style={{
               width: '100%',
@@ -250,7 +278,7 @@ export default function LoginPage() {
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={checking || busy}
+            disabled={authDisabled}
             placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
             style={{
               width: '100%',
@@ -272,7 +300,7 @@ export default function LoginPage() {
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={checking || busy}
+                disabled={authDisabled}
                 placeholder="Repeat password"
                 style={{
                   width: '100%',
@@ -316,7 +344,7 @@ export default function LoginPage() {
           </p>
           <button
             type="button"
-            disabled={checking || busy}
+            disabled={authDisabled}
             onClick={() => signInAnonymous()}
             style={{
               width: '100%',
@@ -327,7 +355,7 @@ export default function LoginPage() {
               color: 'var(--ink-mid)',
               fontSize: 13,
               fontWeight: 500,
-              cursor: checking || busy ? 'not-allowed' : 'pointer',
+              cursor: authDisabled ? 'not-allowed' : 'pointer',
             }}
           >
             Continue anonymously (new session each time you log out)

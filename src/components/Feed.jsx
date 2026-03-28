@@ -166,11 +166,45 @@ function TagPill({ tag, small }) {
   );
 }
 
-function PostCard({ post, onRelate, onReply, writesEnabled }) {
+function authorAvatarLetters(isOwnPost, loginUserId) {
+  if (!isOwnPost) return 'AN';
+  if (loginUserId && loginUserId.length >= 2) return loginUserId.slice(0, 2).toUpperCase();
+  return 'ME';
+}
+
+function authorLine(isOwnPost, loginUserId, isAnonymousUser) {
+  if (!isOwnPost) return { label: 'anonymous', sub: null };
+  if (loginUserId) return { label: 'You', sub: `@${loginUserId}` };
+  if (isAnonymousUser) return { label: 'You', sub: 'private session' };
+  return { label: 'You', sub: 'your account' };
+}
+
+function PostCard({
+  post,
+  onRelate,
+  onReply,
+  writesEnabled,
+  viewerUserId,
+  viewerLoginUserId,
+  viewerIsAnonymous,
+  isMineFeed,
+}) {
   const [related, setRelated] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [reported, setReported] = useState(false);
+
+  const uid = viewerUserId != null ? String(viewerUserId) : null;
+  const aid = post.authorUserId != null ? String(post.authorUserId) : null;
+  const isOwnPost = Boolean(
+    isMineFeed || (uid && aid && uid === aid),
+  );
+  const { label: authorLabel, sub: authorSub } = authorLine(
+    isOwnPost,
+    viewerLoginUserId,
+    viewerIsAnonymous,
+  );
+  const avatarLetters = authorAvatarLetters(isOwnPost, viewerLoginUserId);
 
   const handleRelateClick = () => {
     if (related || !writesEnabled) return;
@@ -196,15 +230,21 @@ function PostCard({ post, onRelate, onReply, writesEnabled }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
             width: 30, height: 30, borderRadius: '50%',
-            background: 'var(--warm-mid)',
+            background: isOwnPost ? 'var(--sage-pale)' : 'var(--warm-mid)',
+            border: isOwnPost ? '1px solid var(--sage-mid)' : 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, fontWeight: 700, color: 'var(--ink-soft)',
+            fontSize: 10, fontWeight: 700, color: isOwnPost ? 'var(--sage)' : 'var(--ink-soft)',
             letterSpacing: '0.02em',
           }}>
-            AN
+            {avatarLetters}
           </div>
           <div>
-            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>anonymous</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{authorLabel}</span>
+            {authorSub && (
+              <span style={{ fontSize: 12, color: 'var(--sage)', fontWeight: 600 }}>
+                {' · '}{authorSub}
+              </span>
+            )}
             <span style={{ fontSize: 12, color: 'var(--ink-soft)', marginLeft: 6 }}>· {post.time}</span>
           </div>
         </div>
@@ -312,12 +352,18 @@ function PostCard({ post, onRelate, onReply, writesEnabled }) {
   );
 }
 
-export default function Feed() {
-  const { userId, isAnonymousUser, isConfigured: authConfigured } = useAuth();
+/**
+ * @param {{ variant?: 'community' | 'mine' }} props
+ */
+export default function Feed({ variant = 'community' }) {
+  const isMine = variant === 'mine';
+  const { userId, loginUserId, isAnonymousUser, isConfigured: authConfigured } = useAuth();
   const [activeTag, setActiveTag] = useState('all');
-  const [posts, setPosts] = useState(() => (isSupabaseConfigured ? [] : SEED_POSTS));
+  const [posts, setPosts] = useState(() => {
+    if (isMine) return [];
+    return isSupabaseConfigured ? [] : SEED_POSTS;
+  });
   const [loadingPosts, setLoadingPosts] = useState(isSupabaseConfigured);
-  const [dbError, setDbError] = useState(null);
   const [persistToSupabase, setPersistToSupabase] = useState(false);
   const [composing, setComposing] = useState(false);
   const [newText, setNewText] = useState('');
@@ -329,24 +375,35 @@ export default function Feed() {
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       setLoadingPosts(false);
+      setPosts(isMine ? [] : SEED_POSTS);
+      setPersistToSupabase(false);
+      return;
+    }
+    if (isMine && !userId) {
+      setLoadingPosts(false);
+      setPosts([]);
+      setPersistToSupabase(false);
       return;
     }
     let cancelled = false;
     (async () => {
+      setLoadingPosts(true);
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('posts')
-          .select('id, created_at, tag, body, relates_count, replies ( id, body, display_name, created_at )')
+          .select('id, created_at, tag, body, relates_count, user_id, replies ( id, body, display_name, created_at )')
           .order('created_at', { ascending: false });
+        if (isMine) {
+          query = query.eq('user_id', userId);
+        }
+        const { data, error } = await query;
         if (cancelled) return;
         if (error) throw error;
         setPosts((data || []).map(mapRowToPost));
         setPersistToSupabase(true);
-        setDbError(null);
-      } catch (e) {
+      } catch {
         if (!cancelled) {
-          setDbError(e.message || 'Could not load posts from Supabase.');
-          setPosts(SEED_POSTS);
+          setPosts(isMine ? [] : SEED_POSTS);
           setPersistToSupabase(false);
         }
       } finally {
@@ -354,7 +411,7 @@ export default function Feed() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [isMine, userId]);
 
   const handleRelate = useCallback((postId) => {
     if (persistToSupabase && supabase && userId) {
@@ -411,7 +468,7 @@ export default function Feed() {
       const { data, error } = await supabase
         .from('posts')
         .insert({ tag: newTag, body, user_id: userId })
-        .select('id, created_at, tag, body, relates_count')
+        .select('id, created_at, tag, body, relates_count, user_id')
         .single();
       if (error) {
         console.error(error);
@@ -420,7 +477,15 @@ export default function Feed() {
       setPosts((p) => [mapRowToPost({ ...data, replies: [] }), ...p]);
     } else {
       setPosts((p) => [
-        { id: Date.now(), tag: newTag, time: 'just now', relates: 0, text: body, replies: [] },
+        {
+          id: Date.now(),
+          authorUserId: userId != null ? String(userId) : null,
+          tag: newTag,
+          time: 'just now',
+          relates: 0,
+          text: body,
+          replies: [],
+        },
         ...p,
       ]);
     }
@@ -443,16 +508,27 @@ export default function Feed() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
           <div>
-            <h2 style={{ fontSize: 22, color: 'var(--ink)', marginBottom: 2 }}>Community feed</h2>
+            <h2 style={{ fontSize: 22, color: 'var(--ink)', marginBottom: 2 }}>
+              {isMine ? 'My posts' : 'Community feed'}
+            </h2>
             <p style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              anonymous • safe • real
-              {persistToSupabase && (
-                <span style={{ marginLeft: 8, color: 'var(--sage)' }}>· saved</span>
-              )}
-              {persistToSupabase && authConfigured && userId && (
-                <span style={{ marginLeft: 8, color: 'var(--ink-mid)' }}>
-                  · {!isAnonymousUser ? 'account' : 'private session'}
-                </span>
+              {isMine
+                ? 'Only you can see what you’ve shared here.'
+                : (
+                  <>
+                    anonymous • safe • real
+                    {persistToSupabase && (
+                      <span style={{ marginLeft: 8, color: 'var(--sage)' }}>· saved</span>
+                    )}
+                    {persistToSupabase && authConfigured && userId && (
+                      <span style={{ marginLeft: 8, color: 'var(--ink-mid)' }}>
+                        · {!isAnonymousUser ? 'account' : 'private session'}
+                      </span>
+                    )}
+                  </>
+                )}
+              {isMine && persistToSupabase && (
+                <span style={{ marginLeft: 8, color: 'var(--sage)' }}>· synced</span>
               )}
             </p>
           </div>
@@ -499,8 +575,10 @@ export default function Feed() {
           background: 'var(--sage-pale)',
           animation: 'fadeUp 0.3s ease',
         }}>
-          <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginBottom: 10, fontStyle: 'italic' }}>
-            You're posting anonymously. No name, no judgment.
+          <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginBottom: 10, fontStyle: 'italic', lineHeight: 1.5 }}>
+            {loginUserId
+              ? 'Others still see you as anonymous on the feed. Your User ID is only shown to you on your own posts and under My posts.'
+              : "You're posting anonymously. No name, no judgment."}
           </p>
           <textarea
             autoFocus
@@ -556,20 +634,6 @@ export default function Feed() {
         </div>
       )}
 
-      {dbError && (
-        <div style={{
-          margin: '12px 24px 0',
-          padding: '10px 14px',
-          background: '#FDF6F0',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid #E8C4B3',
-          fontSize: 13,
-          color: 'var(--ink-mid)',
-        }}>
-          {dbError} Showing sample posts offline.
-        </div>
-      )}
-
       {loadingPosts && (
         <div style={{ padding: '32px 24px', textAlign: 'center', color: 'var(--ink-soft)', fontSize: 14 }}>
           Loading posts…
@@ -577,7 +641,7 @@ export default function Feed() {
       )}
 
       {/* Reach banner */}
-      {!loadingPosts && reachBanner && (
+      {!loadingPosts && !isMine && reachBanner && (
         <div style={{
           margin: '16px 24px',
           padding: '14px 16px',
@@ -614,12 +678,36 @@ export default function Feed() {
             onRelate={handleRelate}
             onReply={handleReply}
             writesEnabled={!persistToSupabase || canWriteDb}
+            viewerUserId={userId}
+            viewerLoginUserId={loginUserId}
+            viewerIsAnonymous={isAnonymousUser}
+            isMineFeed={isMine}
           />
         ))}
         {!loadingPosts && filtered.length === 0 && (
           <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--ink-soft)' }}>
-            <p style={{ fontSize: 15, marginBottom: 6 }}>No posts with this feeling yet.</p>
-            <p style={{ fontSize: 13 }}>Be the first to share.</p>
+            {isMine ? (
+              posts.length === 0 ? (
+                <>
+                  <p style={{ fontSize: 15, marginBottom: 6 }}>You haven’t posted anything yet.</p>
+                  <p style={{ fontSize: 13 }}>
+                    {persistToSupabase
+                      ? 'Use + Post above to share, or open the community feed to join the conversation.'
+                      : 'Connect Supabase and run the schema so your posts can be saved and listed here.'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 15, marginBottom: 6 }}>No posts with this tag.</p>
+                  <p style={{ fontSize: 13 }}>Try another feeling filter or choose All.</p>
+                </>
+              )
+            ) : (
+              <>
+                <p style={{ fontSize: 15, marginBottom: 6 }}>No posts with this feeling yet.</p>
+                <p style={{ fontSize: 13 }}>Be the first to share.</p>
+              </>
+            )}
           </div>
         )}
       </div>
