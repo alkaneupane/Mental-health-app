@@ -3,17 +3,16 @@ import { Flag, Heart, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react
 
 const TAGS = [
   { id: 'all',      label: 'All' },
+  { id: 'family',   label: 'Family Pressure' },
+  { id: 'study_abroad', label: 'Studying Abroad' },
+  { id: 'marriage', label: 'Marriage' },
+  { id: 'financial', label: 'Financial Stress' },
+  { id: 'loneliness',   label: 'Loneliness' },
+  { id: 'hope',     label: 'Hope' },
+  { id: 'burnout',  label: 'Burned out' },
   { id: 'lost',     label: 'Feeling lost' },
   { id: 'overwhelmed', label: 'Overwhelmed' },
-  { id: 'family',   label: 'Family pressure' },
-  { id: 'burnout',  label: 'Burned out' },
-  { id: 'hope',     label: 'Need hope' },
-  { id: 'lonely',   label: 'Lonely' },
-  { id: 'marriage', label: 'Marriage Pressure' },
-  { id: 'study_abroad', label: 'Studying Abroad' },
-  { id: 'financial', label: 'Financial Stress' },
-  { id: 'academic', label: 'Academic Pressure' },
-  { id: 'loneliness', label: 'Loneliness' },
+  { id: 'miscellaneous', label: 'Miscellaneous' },
 ];
 
 const TAG_COLORS = {
@@ -63,6 +62,86 @@ const SEED_POSTS = [
     id: 5, tag: 'study_abroad', time: '5 hr ago', relates: 17,
     text: "First in my family to study abroad. Everyone is proud. Nobody asks if I'm okay. I smile on video calls so they don't worry. I don't know how to tell them I'm not okay.",
     replies: [],
+  },
+  {
+    id: 6, tag: 'family', time: '25 min ago', relates: 41,
+    text: "Told my family I'm stressed and they said 'others have it worse.'",
+    replies: [
+      { id: 1, text: "That sentence hurts more than they realize." },
+      { id: 2, text: "Your pain doesn't need comparison to be valid." },
+    ],
+  },
+  {
+    id: 7, tag: 'family', time: '3 hr ago', relates: 56,
+    text: "My parents think mental health is just an excuse. I can't talk to them about anything.",
+    replies: [
+      { id: 1, text: "Same here. In my house, 'just pray' is the solution to everything." },
+      { id: 2, text: "You're not wrong for feeling this way. It's just hard in our culture." },
+    ],
+  },
+  {
+    id: 8, tag: 'study_abroad', time: '18 min ago', relates: 38,
+    text: "I moved abroad for studies and I've never felt this alone.",
+    replies: [
+      { id: 1, text: "Same. Everyone thinks it's a dream life but it's actually really hard." },
+      { id: 2, text: "You left your whole support system behind. That's not easy." },
+    ],
+  },
+  {
+    id: 9, tag: 'study_abroad', time: '1 hr ago', relates: 52,
+    text: "If I fail, all the money my family spent on me is wasted.",
+    replies: [
+      { id: 1, text: "That guilt is so heavy." },
+      { id: 2, text: "You are not an investment. You're a person." },
+    ],
+  },
+  {
+    id: 10, tag: 'study_abroad', time: '6 hr ago', relates: 44,
+    text: "I feel like I'm failing at everything. Everyone else is doing better than me.",
+    replies: [
+      { id: 1, text: "I used to feel like that every semester. Turns out everyone is just pretending to have it together." },
+      { id: 2, text: "You're not behind. You're just on your own timeline." },
+    ],
+  },
+  {
+    id: 11, tag: 'family', time: '45 min ago', relates: 29,
+    text: "I don't feel safe talking about my feelings in my own house.",
+    replies: [
+      { id: 1, text: "That's more common than people admit." },
+      { id: 2, text: "I'm glad you said it somewhere, even if it's here." },
+    ],
+  },
+  {
+    id: 12, tag: 'financial', time: '2 hr ago', relates: 63,
+    text: "My whole family depends on me to succeed. I feel like I can't fail.",
+    replies: [
+      { id: 1, text: "That kind of pressure is heavy to carry alone." },
+      { id: 2, text: "You're a person, not just their expectations." },
+    ],
+  },
+  {
+    id: 13, tag: 'burnout', time: '33 min ago', relates: 71,
+    text: "I'm so tired. Not physically… just tired of everything.",
+    replies: [
+      { id: 1, text: "That kind of tired needs rest, not sleep." },
+      { id: 2, text: "You don't have to keep pushing every day." },
+    ],
+  },
+  {
+    id: 14, tag: 'loneliness', time: '50 min ago', relates: 48,
+    text: "Does anyone else get overwhelmed at night for no reason?",
+    replies: [
+      { id: 1, text: "Nighttime is when my brain decides to ruin everything." },
+      { id: 2, text: "You're not the only one awake feeling this." },
+    ],
+  },
+  {
+    id: 15, tag: 'family', time: '1 hr ago', relates: 54,
+    text: "My relatives keep comparing me to others and I feel like I'm never enough.",
+    replies: [
+      { id: 1, text: "Relatives can be brutal without realizing it." },
+      { id: 2, text: "You're not here to compete with anyone." },
+    ],
   },
 ];
 
