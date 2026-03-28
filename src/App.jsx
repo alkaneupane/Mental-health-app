@@ -13,7 +13,9 @@ export default function App() {
   const [activePage, setActivePage] = useState('feed');
   const [reachCount, setReachCount] = useState(3);
 
-  const needsLogin = isConfigured && (!sessionReady || !userId);
+  // Require login whenever Supabase is configured but there is no session, and also when env is
+  // missing (otherwise Windows / fresh clones skip the gate and go straight to the feed).
+  const needsLogin = !sessionReady || !userId || !isConfigured;
 
   if (needsLogin) {
     return <LoginPage />;
@@ -43,6 +45,7 @@ export default function App() {
         background: 'var(--white)',
       }}>
         {activePage === 'feed' && <Feed />}
+        {activePage === 'myposts' && <Feed variant="mine" />}
         {activePage === 'wellbeing' && (
           <div style={{ padding: '28px 28px 80px' }}>
             <div style={{ marginBottom: 24 }}>
