@@ -67,6 +67,26 @@ const GENTLE_NICKNAMES = [
   "Meadow Song",
 ];
 
+function stableNicknameIndex(seed) {
+  const s = String(seed);
+  let n = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    n = (n + s.charCodeAt(i) * (i + 1)) % 100000;
+  }
+  return n % GENTLE_NICKNAMES.length;
+}
+
+/** Community: gentle name for others; @login or You for your own posts. */
+function nicknameForViewerPost(base, viewerUserId, viewerLoginUserId) {
+  const authorId = base.authorUserId != null ? String(base.authorUserId) : null;
+  const vid = viewerUserId != null ? String(viewerUserId) : null;
+  const isOwn = Boolean(vid && authorId && vid === authorId);
+  if (isOwn) {
+    return viewerLoginUserId ? `@${viewerLoginUserId}` : "You";
+  }
+  return GENTLE_NICKNAMES[stableNicknameIndex(base.id)];
+}
+
 const SEED_POSTS = [
   {
     id: 1,
@@ -385,8 +405,15 @@ const getColorForNickname = (nickname) => {
   return colors[index];
 };
 
-// Get initials from nickname
+// Get initials from nickname (handles @user_id and "You")
 const getInitialsFromNickname = (nickname) => {
+  if (nickname === "You") return "YO";
+  if (nickname.startsWith("@")) {
+    const u = nickname.slice(1);
+    const alnum = u.replace(/[^a-zA-Z0-9]/g, "");
+    if (alnum.length >= 2) return alnum.slice(0, 2).toUpperCase();
+    return (u.slice(0, 2) || "ME").toUpperCase();
+  }
   return nickname
     .split(" ")
     .map((word) => word[0])
@@ -665,14 +692,19 @@ function PostCard({ post, onRelate, onReply, writesEnabled }) {
   );
 }
 
-export default function Feed() {
-  const { userId, isAnonymousUser, isConfigured: authConfigured } = useAuth();
+/**
+ * @param {{ variant?: "community" | "mine" }} props
+ */
+export default function Feed({ variant = "community" }) {
+  const isMine = variant === "mine";
+  const { userId, loginUserId, isAnonymousUser, isConfigured: authConfigured } =
+    useAuth();
   const [activeTag, setActiveTag] = useState("all");
-  const [posts, setPosts] = useState(() =>
-    isSupabaseConfigured ? [] : SEED_POSTS,
-  );
+  const [posts, setPosts] = useState(() => {
+    if (isMine) return [];
+    return isSupabaseConfigured ? [] : SEED_POSTS;
+  });
   const [loadingPosts, setLoadingPosts] = useState(isSupabaseConfigured);
-  const [dbError, setDbError] = useState(null);
   const [persistToSupabase, setPersistToSupabase] = useState(false);
   const [composing, setComposing] = useState(false);
   const [newText, setNewText] = useState("");
@@ -684,36 +716,47 @@ export default function Feed() {
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       setLoadingPosts(false);
+      setPosts(isMine ? [] : SEED_POSTS);
+      setPersistToSupabase(false);
+      return;
+    }
+    if (isMine && !userId) {
+      setLoadingPosts(false);
+      setPosts([]);
+      setPersistToSupabase(false);
       return;
     }
     let cancelled = false;
     (async () => {
+      setLoadingPosts(true);
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from("posts")
           .select(
-            "id, created_at, tag, body, relates_count, replies ( id, body, display_name, created_at )",
+            "id, created_at, tag, body, relates_count, user_id, replies ( id, body, display_name, created_at )",
           )
           .order("created_at", { ascending: false });
+        if (isMine) query = query.eq("user_id", userId);
+        const { data, error } = await query;
         if (cancelled) return;
         if (error) throw error;
-        const mappedPosts = (data || []).map((post) => {
-          const randomNickname =
-            GENTLE_NICKNAMES[
-              Math.floor(Math.random() * GENTLE_NICKNAMES.length)
-            ];
-          return {
-            ...mapRowToPost(post),
-            nickname: randomNickname,
-          };
+        const mappedPosts = (data || []).map((row) => {
+          const base = mapRowToPost(row);
+          const nickname = isMine
+            ? loginUserId
+              ? `@${loginUserId}`
+              : "You"
+            : nicknameForViewerPost(base, userId, loginUserId);
+          return { ...base, nickname };
         });
         setPosts(mappedPosts);
         setPersistToSupabase(true);
-        setDbError(null);
       } catch (e) {
         if (!cancelled) {
-          setDbError(e.message || "Could not load posts from Supabase.");
-          setPosts(SEED_POSTS);
+          if (import.meta.env.DEV) {
+            console.warn("[Feed] Could not load posts from Supabase:", e?.message || e);
+          }
+          setPosts(isMine ? [] : SEED_POSTS);
           setPersistToSupabase(false);
         }
       } finally {
@@ -723,7 +766,7 @@ export default function Feed() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isMine, userId, loginUserId]);
 
   const handleRelate = useCallback(
     (postId) => {
@@ -801,15 +844,14 @@ export default function Feed() {
   const handlePost = async () => {
     if (!newText.trim()) return;
     const body = newText.trim();
-    const randomNickname =
-      GENTLE_NICKNAMES[Math.floor(Math.random() * GENTLE_NICKNAMES.length)];
+    const ownNickname = loginUserId ? `@${loginUserId}` : "You";
 
     if (persistToSupabase && supabase) {
       if (!userId) return;
       const { data, error } = await supabase
         .from("posts")
         .insert({ tag: newTag, body, user_id: userId })
-        .select("id, created_at, tag, body, relates_count")
+        .select("id, created_at, tag, body, relates_count, user_id")
         .single();
       if (error) {
         console.error(error);
@@ -818,7 +860,7 @@ export default function Feed() {
       setPosts((p) => [
         {
           ...mapRowToPost({ ...data, replies: [] }),
-          nickname: randomNickname,
+          nickname: ownNickname,
         },
         ...p,
       ]);
@@ -826,12 +868,13 @@ export default function Feed() {
       setPosts((p) => [
         {
           id: Date.now(),
+          authorUserId: userId != null ? String(userId) : null,
           tag: newTag,
           time: "just now",
           relates: 0,
           text: body,
           replies: [],
-          nickname: randomNickname,
+          nickname: ownNickname,
         },
         ...p,
       ]);
@@ -867,19 +910,32 @@ export default function Feed() {
         >
           <div>
             <h2 style={{ fontSize: 22, color: "var(--ink)", marginBottom: 2 }}>
-              Community feed
+              {isMine ? "My posts" : "Community feed"}
             </h2>
             <p style={{ fontSize: 12, color: "var(--ink-soft)" }}>
-              anonymous • safe • real • gentle nicknames
-              {persistToSupabase && (
-                <span style={{ marginLeft: 8, color: "var(--sage)" }}>
-                  · saved
-                </span>
-              )}
-              {persistToSupabase && authConfigured && userId && (
-                <span style={{ marginLeft: 8, color: "var(--ink-mid)" }}>
-                  · {!isAnonymousUser ? "account" : "private session"}
-                </span>
+              {isMine ? (
+                <>
+                  Posts tied to your account
+                  {persistToSupabase && (
+                    <span style={{ marginLeft: 8, color: "var(--sage)" }}>
+                      · synced
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  anonymous • safe • real • gentle nicknames
+                  {persistToSupabase && (
+                    <span style={{ marginLeft: 8, color: "var(--sage)" }}>
+                      · saved
+                    </span>
+                  )}
+                  {persistToSupabase && authConfigured && userId && (
+                    <span style={{ marginLeft: 8, color: "var(--ink-mid)" }}>
+                      · {!isAnonymousUser ? "account" : "private session"}
+                    </span>
+                  )}
+                </>
               )}
             </p>
           </div>
@@ -949,10 +1005,12 @@ export default function Feed() {
               color: "var(--ink-soft)",
               marginBottom: 10,
               fontStyle: "italic",
+              lineHeight: 1.5,
             }}
           >
-            You're posting anonymously. You'll receive a gentle, unique
-            nickname.
+            {loginUserId
+              ? `Your posts appear as @${loginUserId} to you and under My posts. Others still see gentle nicknames on the community feed.`
+              : "You're posting anonymously. Others see a gentle nickname; your posts show as “You” to you."}
           </p>
           <textarea
             autoFocus
@@ -1040,22 +1098,6 @@ export default function Feed() {
         </div>
       )}
 
-      {dbError && (
-        <div
-          style={{
-            margin: "12px 24px 0",
-            padding: "10px 14px",
-            background: "#FDF6F0",
-            borderRadius: "var(--radius-md)",
-            border: "1px solid #E8C4B3",
-            fontSize: 13,
-            color: "var(--ink-mid)",
-          }}
-        >
-          {dbError} Showing sample posts offline.
-        </div>
-      )}
-
       {loadingPosts && (
         <div
           style={{
@@ -1070,7 +1112,7 @@ export default function Feed() {
       )}
 
       {/* Reach banner */}
-      {!loadingPosts && reachBanner && (
+      {!loadingPosts && !isMine && reachBanner && (
         <div
           style={{
             margin: "16px 24px",
@@ -1141,10 +1183,32 @@ export default function Feed() {
               color: "var(--ink-soft)",
             }}
           >
-            <p style={{ fontSize: 15, marginBottom: 6 }}>
-              No posts with this feeling yet.
-            </p>
-            <p style={{ fontSize: 13 }}>Be the first to share.</p>
+            {isMine && posts.length > 0 ? (
+              <>
+                <p style={{ fontSize: 15, marginBottom: 6 }}>
+                  No posts with this tag.
+                </p>
+                <p style={{ fontSize: 13 }}>Try choosing All or another feeling.</p>
+              </>
+            ) : isMine ? (
+              <>
+                <p style={{ fontSize: 15, marginBottom: 6 }}>
+                  You don&apos;t have any posts here yet.
+                </p>
+                <p style={{ fontSize: 13 }}>
+                  {persistToSupabase
+                    ? "Create a post from the community feed — it will show up here."
+                    : "Connect Supabase and run supabase/schema.sql so posts can be saved to your account."}
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 15, marginBottom: 6 }}>
+                  No posts with this feeling yet.
+                </p>
+                <p style={{ fontSize: 13 }}>Be the first to share.</p>
+              </>
+            )}
           </div>
         )}
       </div>
