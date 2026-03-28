@@ -26,16 +26,36 @@ A Reddit-style post feed designed for emotional safety — no engagement metrics
 A background AI system that tracks emotional tone across posts and check-ins, generating a personal wellbeing score visible **only to the user**. Automatically surfaces crisis resources when the score drops critically low.
 
 ### 🤝 AI Check-in Companion
-A conversational AI companion (powered by the Anthropic API) that serves as a gentle first point of contact. Not a replacement for therapy — a bridge that helps people take the first step.
+A conversational companion UI with gentle, scripted responses and crisis-aware messaging — a first point of contact. Not a replacement for therapy — a bridge that helps people take the first step.
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** React + Vite
-- **Styling:** CSS custom properties (no framework — full design control)
-- **AI Companion:** Anthropic Claude API (`claude-sonnet-4-20250514`)
-- **Icons:** Lucide React
+### Core app
+- **UI library:** [React](https://react.dev/) 19 + [React DOM](https://react.dev/) — components, hooks, context (e.g. auth)
+- **Build tool:** [Vite](https://vite.dev/) 6 — dev server, HMR, production bundling
+- **React integration:** [`@vitejs/plugin-react`](https://github.com/vitejs/vite-plugin-react) — Fast Refresh
+
+### Styling & typography
+- **CSS:** Global styles in `src/index.css` — **CSS custom properties** (design tokens: colors, radii, spacing), no Tailwind/Bootstrap
+- **Fonts:** [Google Fonts](https://fonts.google.com/) — **DM Sans** (body/UI), **DM Serif Display** (headings), imported in `src/index.css`
+
+### Backend & data
+- **BaaS / Auth / DB:** [Supabase](https://supabase.com/) via [`@supabase/supabase-js`](https://github.com/supabase/supabase-js) — email/password-style auth (User ID → synthetic email), optional anonymous sign-in, **PostgreSQL** tables `posts` / `replies`, **Row Level Security**, RPC `increment_post_relates`
+- **Schema / migrations:** SQL in `supabase/schema.sql` (and helper migrations under `supabase/`) — run in Supabase SQL Editor
+- **Environment:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (see `.env.example`)
+
+### Networking (development)
+- **Vite proxy:** `vite.config.js` proxies `/__supabase` → your Supabase project URL so the browser can call the API same-origin in dev (reduces CORS / network issues). Optional `VITE_SUPABASE_NO_PROXY` to talk to Supabase directly.
+
+### Icons & quality
+- **Icons:** [Lucide React](https://lucide.dev/guide/packages/lucide-react)
+- **Linting:** ESLint 9 + `eslint-plugin-react-hooks` + `eslint-plugin-react-refresh` + `@eslint/js` / `globals`
+
+### Tooling
+- **Language:** JavaScript (ES modules) — `type: "module"` in `package.json`
+- **Type hints (editor):** `@types/react`, `@types/react-dom` (dev)
 
 ---
 
@@ -50,16 +70,19 @@ A conversational AI companion (powered by the Anthropic API) that serves as a ge
 ```bash
 # Clone the repo
 git clone <your-repo-url>
-cd safecircle
+cd Mental-health-app
 
 # Install dependencies
 npm install
 
 # Start development server
 npm run dev
+
+NOTE: A .env file at the project root is required for Supabase (PostgreSQL, auth, and login). It holds private API credentials so it's not included in this repository. Copy .env.example to .env and fill in your project URL and anon key, please contact the team if you need shared credentials to test this build — we can supply them separately.
+
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:###](http://localhost:###) in your browser.
 
 ### Build for Production
 
@@ -85,7 +108,7 @@ npm run build
 
 - The **Reach button** is our most original feature — a silent distress signal that requires no words.
 - All posts are anonymous by default. The platform has no engagement metrics by design.
-- The AI Companion uses the Anthropic API with a culturally-aware system prompt designed for South Asian communities.
+- The AI Companion in this build uses gentle, rule-based responses and crisis keyword detection; messaging is written for South Asian cultural context.
 - Crisis resources (iCall Nepal, Crisis Text Line) are surfaced automatically when distress signals are detected.
 - Business model: grant/NGO funded, with institutional (university/employer) partnerships for sustainability. Individual users are always free.
 
