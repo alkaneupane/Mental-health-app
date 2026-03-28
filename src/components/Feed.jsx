@@ -32,6 +32,8 @@ const TAG_COLORS = {
   academic: { bg: "#ECEAF8", text: "#6B5BA8", border: "#C4BEE8" },
   loneliness: { bg: "#EDE8F2", text: "#7A6B8C", border: "#C8BED8" },
   miscellaneous: { bg: "#F0F0F0", text: "#6B6B6B", border: "#D8D8D8" },
+  General: { bg: "#E8F0EE", text: "#4A6B5C", border: "#A8C9B8" },
+  Misc: { bg: "#F2F0EC", text: "#6B6560", border: "#D4CEC4" },
 };
 
 // Gentle, anonymous nicknames for mental health forum
@@ -358,6 +360,101 @@ const SEED_POSTS = [
         id: 2,
         text: "You're not here to compete with anyone.",
         nickname: "Pyari",
+      },
+    ],
+  },
+  {
+    id: 16,
+    tag: "lost",
+    time: "20 min ago",
+    relates: 31,
+    nickname: "Kale",
+    text: "I'm a student in Nepal and I honestly feel so lost right now. Everyone around me seems to have a clear path — engineering, abroad, something — and I don't even know what I want.",
+    replies: [
+      {
+        id: 1,
+        text: "That confusion is more common than it looks.",
+        nickname: "Kali",
+      },
+      {
+        id: 2,
+        text: "A lot of us are just following paths we didn't choose.",
+        nickname: "Phuchche",
+      },
+      {
+        id: 3,
+        text: "It's okay to not have everything figured out yet.",
+        nickname: "Phuchchi",
+      },
+    ],
+  },
+  {
+    id: 17,
+    tag: "General",
+    time: "8 min ago",
+    relates: 24,
+    nickname: "Gullu",
+    text: "I'm participating in this hackathon right now and I feel like everyone else is way smarter than me. I don't think I belong here.",
+    replies: [
+      {
+        id: 1,
+        text: "I promise you half the people there feel the same way.",
+        nickname: "Lato",
+      },
+      {
+        id: 2,
+        text: "You got in for a reason. Don't count yourself out.",
+        nickname: "Chuchchi",
+      },
+      {
+        id: 3,
+        text: "Hackathons are chaotic for everyone, not just you.",
+        nickname: "Guffadi",
+      },
+    ],
+  },
+  {
+    id: 18,
+    tag: "General",
+    time: "15 min ago",
+    relates: 19,
+    nickname: "Maya",
+    text: "Running on no sleep at this hackathon and I feel like my brain stopped working.",
+    replies: [
+      {
+        id: 1,
+        text: "Hackathon burnout is real 😭",
+        nickname: "Bunto",
+      },
+      {
+        id: 2,
+        text: "Take a short break — your brain needs it.",
+        nickname: "Lamme",
+      },
+      {
+        id: 3,
+        text: "You don't have to push non-stop to prove anything.",
+        nickname: "Gore",
+      },
+    ],
+  },
+  {
+    id: 19,
+    tag: "marriage",
+    time: "40 min ago",
+    relates: 27,
+    nickname: "Junge",
+    text: "I'm not ready for marriage but my family keeps pushing.",
+    replies: [
+      {
+        id: 1,
+        text: "That pressure is so common and so exhausting.",
+        nickname: "Chulbule",
+      },
+      {
+        id: 2,
+        text: "You deserve time to decide your own life.",
+        nickname: "Laddu",
       },
     ],
   },
@@ -913,7 +1010,7 @@ export default function Feed({ variant = "community" }) {
         >
           <div>
             <h2 style={{ fontSize: 22, color: "var(--ink)", marginBottom: 2 }}>
-              {isMine ? "My posts" : "Community feed"}
+              {isMine ? "My posts" : "Community Feed"}
             </h2>
             <p style={{ fontSize: 12, color: "var(--ink-soft)" }}>
               {isMine ? (
@@ -927,7 +1024,7 @@ export default function Feed({ variant = "community" }) {
                 </>
               ) : (
                 <>
-                  anonymous • safe • real • gentle nicknames
+                  Anonymous • Safe • Real 
                   {persistToSupabase && (
                     <span style={{ marginLeft: 8, color: "var(--sage)" }}>
                       · saved

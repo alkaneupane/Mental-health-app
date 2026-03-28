@@ -262,7 +262,7 @@ export default function Sidebar({
           </span>
         </div>
         <p style={{ fontSize: 11, color: "var(--ink-soft)", paddingLeft: 37 }}>
-          anonymous • safe • real
+          Anonymous • Safe • Real
         </p>
       </div>
 
