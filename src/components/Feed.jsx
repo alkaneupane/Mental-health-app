@@ -9,6 +9,11 @@ const TAGS = [
   { id: 'burnout',  label: 'Burned out' },
   { id: 'hope',     label: 'Need hope' },
   { id: 'lonely',   label: 'Lonely' },
+  { id: 'marriage', label: 'Marriage Pressure' },
+  { id: 'study_abroad', label: 'Studying Abroad' },
+  { id: 'financial', label: 'Financial Stress' },
+  { id: 'academic', label: 'Academic Pressure' },
+  { id: 'loneliness', label: 'Loneliness' },
 ];
 
 const TAG_COLORS = {
@@ -18,6 +23,11 @@ const TAG_COLORS = {
   burnout:     { bg: '#FEF3E8', text: '#E8A87C', border: '#F0D0A8' },
   hope:        { bg: '#E8F4F8', text: '#5B8FA8', border: '#A8D0E0' },
   lonely:      { bg: '#F2EBF2', text: '#A87CA8', border: '#D0A8D0' },
+  marriage:    { bg: '#F8EBEE', text: '#A86B78', border: '#E8C4CC' },
+  study_abroad:{ bg: '#E8EEF8', text: '#5B6FA8', border: '#B8C4E8' },
+  financial:   { bg: '#F5F0E8', text: '#8B7355', border: '#D8C8A8' },
+  academic:    { bg: '#ECEAF8', text: '#6B5BA8', border: '#C4BEE8' },
+  loneliness:  { bg: '#EDE8F2', text: '#7A6B8C', border: '#C8BED8' },
 };
 
 const SEED_POSTS = [
@@ -50,7 +60,7 @@ const SEED_POSTS = [
     ],
   },
   {
-    id: 5, tag: 'lonely', time: '5 hr ago', relates: 17,
+    id: 5, tag: 'study_abroad', time: '5 hr ago', relates: 17,
     text: "First in my family to study abroad. Everyone is proud. Nobody asks if I'm okay. I smile on video calls so they don't worry. I don't know how to tell them I'm not okay.",
     replies: [],
   },
