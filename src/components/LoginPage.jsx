@@ -116,7 +116,7 @@ export default function LoginPage() {
               margin: 0,
               lineHeight: 1.15,
             }}>
-              SafeCircle
+              SafeSpace
             </h1>
             <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
               Sign in with User ID and password
