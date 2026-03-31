@@ -1,4 +1,4 @@
-# SafeCircle 🌿
+# SafeSpace 🌿
 
 **Nepal–US AI Hackathon 2026 — Problem Statement 2**
 
@@ -6,11 +6,11 @@
 
 ---
 
-## What is SafeCircle?
+## What is SafeSpace?
 
-SafeCircle is a free, anonymous, community-driven peer support platform where people can express their mental health struggles, connect with others who understand them, and receive human and AI-assisted support — without fear of identity exposure, judgment, or cost.
+SafeSpace is a free, anonymous, community-driven peer support platform where people can express their mental health struggles, connect with others who understand them, and receive human and AI-assisted support — without fear of identity exposure, judgment, or cost.
 
-Built for South Asian communities where mental health stigma remains high, SafeCircle removes the three biggest barriers to early support: **cost** (free), **identity** (anonymous by default), and **stigma** (community-normalised).
+Built for South Asian communities where mental health stigma remains high, SafeSpace removes the three biggest barriers to early support: **cost** (free), **identity** (anonymous by default), and **stigma** (community-normalised).
 
 ---
 
@@ -114,4 +114,4 @@ npm run build
 
 ---
 
-*SafeCircle — Nepal–US AI Hackathon 2026*
+*SafeSpace — Nepal–US AI Hackathon 2026*
